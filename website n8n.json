@@ -1,0 +1,101 @@
+{
+  "name": "My workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "run-benchmark",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "34fc673e-14b9-4ed6-9aab-47bdf9af2a15",
+      "name": "Webhook - Run Benchmark",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        160,
+        -80
+      ],
+      "webhookId": "3de04062-6752-4811-aa0b-4bcbf27d4bc4"
+    },
+    {
+      "parameters": {
+        "jsCode": "// ============================================================\n// GERCEK DOGRULUK BENCHMARK'I\n// Metodoloji notu: tool secimi dogrulugu icin \"exact match\"\n// (Berkeley Function-Calling Leaderboard AST-match yaklasimina benzer),\n// geocoding dogrulugu icin \"X km esik degeri icinde mi\" yaklasimi\n// (yaygin geocoding-benchmark literaturunde kullanilan esik tabanli dogruluk).\n// ============================================================\n\nconst BASE_URL = ($json.body && $json.body.base_url) || 'http://localhost:5678/webhook';\n\nconst testCases = [\n  { query: \"Zeytinburnu'ndaki eczanelerin etrafina 200m buffer at\", expected_tool: \"Buffer\", location: \"Zeytinburnu\", lat: 40.9950, lon: 28.9020, feature_type: \"pharmacy\", distance: 200 },\n  { query: \"Kadikoy'deki kafeleri goster\", expected_tool: \"AttributeTable\", location: \"Kadikoy\", lat: 40.9833, lon: 29.0333, feature_type: \"cafe\" },\n  { query: \"Besiktas'taki hastanelerin oznitelik tablosunu ac\", expected_tool: \"AttributeTable\", location: \"Besiktas\", lat: 41.0422, lon: 29.0061, feature_type: \"hospital\" },\n  { query: \"Uskudar'da adinda Merkez gecen eczaneleri bul\", expected_tool: \"AttributeQuery\", location: \"Uskudar\", lat: 41.0226, lon: 29.0244, feature_type: \"pharmacy\", filter_field: \"name\" },\n  { query: \"Sisli'deki eczanelere en yakin hastaneyi bul\", expected_tool: \"NearestSearch\", location: \"Sisli\", lat: 41.0608, lon: 28.9866, feature_type: \"pharmacy\", secondary_feature_type: \"hospital\" },\n  { query: \"Fatih'teki okullarin yogunluk analizini yap\", expected_tool: \"PointDensity\", location: \"Fatih\", lat: 41.0190, lon: 28.9495, feature_type: \"school\" },\n  { query: \"Beyoglu'nu haritada goster\", expected_tool: \"Geocode\", location: \"Beyoglu\", lat: 41.0370, lon: 28.9850 },\n  { query: \"Maltepe'deki parklarin 300 metre etki alanini ciz\", expected_tool: \"Buffer\", location: \"Maltepe\", lat: 40.9357, lon: 29.1517, feature_type: \"park\", distance: 300 },\n  { query: \"Bahcelievler'deki eczanelerin 400m bufferi ile okullarin 300m bufferinin kesisimini bul\", expected_tool: \"Intersection\", location: \"Bahcelievler\", lat: 41.0036, lon: 28.8631, feature_type: \"pharmacy\", secondary_feature_type: \"school\", distance: 400, secondary_distance: 300 },\n  { query: \"Atasehir'deki bankalari listele\", expected_tool: \"AttributeTable\", location: \"Atasehir\", lat: 40.9923, lon: 29.1244, feature_type: \"bank\" }\n];\n\nconst models = [\n  { key: 'claude',   path: 'gis-claude' },\n  { key: 'gpt',      path: 'gis-gpt' },\n  { key: 'groq',     path: 'gis-groq' },\n  { key: 'gemini',   path: 'gis-gemini' },\n  { key: 'deepseek', path: 'gis-deepseek' },\n  { key: 'qwen',     path: 'gis-qwen' },\n  { key: 'kimi',     path: 'gis-kimi' },\n  { key: 'glm',      path: 'gis-glm' }\n];\n\nfunction haversineKm(lat1, lon1, lat2, lon2) {\n  const R = 6371;\n  const dLat = (lat2 - lat1) * Math.PI / 180;\n  const dLon = (lon2 - lon1) * Math.PI / 180;\n  const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;\n  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));\n}\n\nconst GEO_THRESHOLD_KM = 2; // 2 km icinde ise konum bulma \"dogru\" sayilir\n\nconst perModelResults = {};\nfor (const m of models) perModelResults[m.key] = [];\n\nfor (const tc of testCases) {\n  for (const m of models) {\n    const t0 = Date.now();\n    let resp = null, error = null;\n    try {\n      resp = await this.helpers.httpRequest({\n        method: 'POST',\n        url: `${BASE_URL}/${m.path}`,\n        body: { message: tc.query },\n        json: true,\n        timeout: 60000\n      });\n    } catch (e) {\n      error = e.message || String(e);\n    }\n    const wallMs = Date.now() - t0;\n\n    const row = { query: tc.query, expected_tool: tc.expected_tool, error };\n    if (resp) {\n      const p = resp.parameters || {};\n      row.actual_tool = resp.selected_tool;\n      row.tool_match = resp.selected_tool === tc.expected_tool ? 1 : 0;\n\n      if (tc.feature_type) {\n        row.feature_type_match = (p.feature_type === tc.feature_type) ? 1 : 0;\n      }\n      if (tc.distance) {\n        row.distance_match = (Number(p.distance_meters) === Number(tc.distance)) ? 1 : 0;\n      }\n      if (typeof p.latitude === 'number' && typeof p.longitude === 'number') {\n        const distKm = haversineKm(p.latitude, p.longitude, tc.lat, tc.lon);\n        row.geocode_distance_km = Math.round(distKm * 100) / 100;\n        row.geocode_correct = distKm <= GEO_THRESHOLD_KM ? 1 : 0;\n      } else {\n        row.geocode_correct = 0;\n      }\n      row.schema_valid = (resp.geojson && resp.geojson.type === 'FeatureCollection') ? 1 : 0;\n      row.processing_time_ms = resp.processing_time_ms ?? wallMs;\n      row.feature_count = resp.feature_count ?? 0;\n    } else {\n      row.tool_match = 0;\n      row.geocode_correct = 0;\n      row.schema_valid = 0;\n      row.processing_time_ms = wallMs;\n      row.feature_count = 0;\n    }\n    perModelResults[m.key].push(row);\n  }\n}\n\n// --- Aggregation: gercek olcumlere dayali skorlar ---\nfunction avg(arr) { return arr.length ? arr.reduce((a,b)=>a+b,0) / arr.length : 0; }\n\nconst dashboard = {};\nfor (const m of models) {\n  const rows = perModelResults[m.key];\n  const paramRows = rows.filter(r => r.feature_type_match !== undefined || r.distance_match !== undefined);\n  const paramScores = paramRows.map(r => {\n    const parts = [];\n    if (r.feature_type_match !== undefined) parts.push(r.feature_type_match);\n    if (r.distance_match !== undefined) parts.push(r.distance_match);\n    return avg(parts);\n  });\n\n  dashboard[m.key] = {\n    tool_accuracy: Math.round(avg(rows.map(r => r.tool_match)) * 100),\n    spatial_accuracy: Math.round(avg(rows.map(r => r.geocode_correct)) * 100),\n    param_accuracy: Math.round(avg(paramScores) * 100),\n    schema_validity: Math.round(avg(rows.map(r => r.schema_valid)) * 100),\n    avg_latency_ms: Math.round(avg(rows.map(r => r.processing_time_ms))),\n    error_count: rows.filter(r => r.error).length,\n    details: rows\n  };\n}\n\nreturn [{\n  json: {\n    generated_at: new Date().toISOString(),\n    test_case_count: testCases.length,\n    methodology: {\n      tool_accuracy: \"Beklenen GIS aracinin (selected_tool) tam eslesme orani (Berkeley Function-Calling Leaderboard AST-match yaklasimi)\",\n      spatial_accuracy: `Nominatim'den donen koordinatin gercek konuma ${GEO_THRESHOLD_KM} km icinde olma orani`,\n      param_accuracy: \"feature_type ve distance_meters parametrelerinin dogru cikarilma orani\",\n      schema_validity: \"Cikan GeoJSON'un gecerli FeatureCollection olma orani\"\n    },\n    dashboard\n  }\n}];"
+      },
+      "id": "0c7b2f3d-c3fb-4885-83e8-27a505bc7105",
+      "name": "Run Benchmark & Score",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        400,
+        -80
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "application/json; charset=utf-8"
+              },
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      },
+      "id": "b57147c9-131c-4c80-b933-328786e8f1ba",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.2,
+      "position": [
+        640,
+        -80
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook - Run Benchmark": {
+      "main": [
+        [
+          {
+            "node": "Run Benchmark & Score",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run Benchmark & Score": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "f28abe96-aa45-4f6e-a161-75db58377be1",
+  "meta": {
+    "instanceId": "6525f1d2d37acedc8d65f2c5ebd66cc1803c3ede4cb4b58f03ee2b771e6d7ed9"
+  },
+  "nodeGroups": [],
+  "id": "TVoQ8kbbvIrN9uhf",
+  "tags": []
+}

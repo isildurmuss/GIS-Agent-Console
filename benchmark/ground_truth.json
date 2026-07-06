@@ -1,0 +1,75 @@
+{
+  "_comment": "ArcGIS Ground Truth verileri. Her senaryo ID'si için ArcGIS'te bulunan sonuçları girin. Boş bırakılan alanlar benchmark sırasında atlanır ve sadece modeller-arası tutarlılık analizi yapılır.",
+  "TR_01": {
+    "feature_count": null,
+    "feature_names": [],
+    "measurement_value": null,
+    "measurement_unit": "m²"
+  },
+  "TR_02": {
+    "feature_count": null,
+    "feature_names": [],
+    "measurement_value": null,
+    "measurement_unit": null
+  },
+  "TR_03": {
+    "feature_count": null,
+    "feature_names": [],
+    "measurement_value": null,
+    "measurement_unit": null
+  },
+  "TR_04": {
+    "feature_count": null,
+    "feature_names": [],
+    "measurement_value": null,
+    "measurement_unit": null
+  },
+  "TR_05": {
+    "feature_count": null,
+    "feature_names": [],
+    "measurement_value": null,
+    "measurement_unit": "m"
+  },
+  "TR_06": {
+    "feature_count": null,
+    "feature_names": [],
+    "measurement_value": null,
+    "measurement_unit": null
+  },
+  "TR_07": {
+    "feature_count": null,
+    "feature_names": [],
+    "measurement_value": null,
+    "measurement_unit": "degrees"
+  },
+  "TR_08": {
+    "feature_count": null,
+    "feature_names": [],
+    "measurement_value": null,
+    "measurement_unit": "m²"
+  },
+  "TR_09": {
+    "feature_count": null,
+    "feature_names": [],
+    "measurement_value": null,
+    "measurement_unit": null
+  },
+  "TR_10": {
+    "feature_count": null,
+    "feature_names": [],
+    "measurement_value": null,
+    "measurement_unit": null
+  },
+  "TR_11": {
+    "feature_count": null,
+    "feature_names": [],
+    "measurement_value": null,
+    "measurement_unit": "km"
+  },
+  "TR_12": {
+    "feature_count": null,
+    "feature_names": [],
+    "measurement_value": null,
+    "measurement_unit": "m"
+  }
+}

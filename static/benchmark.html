@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GIS Benchmark — Model Karşılaştırma</title>
+  <meta name="description" content="CBS yapay zeka modellerini 10 farklı senaryo üzerinde test edin. Araç doğruluğu, konum doğruluğu, parametre doğruluğu ve GeoJSON geçerliliğini karşılaştırın." />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/static/benchmark.css" />
+</head>
+<body>
+
+  <div class="bx-app">
+
+    <!-- ═══════════════════════════════════════════════════════════════════
+         TOPBAR
+         ═══════════════════════════════════════════════════════════════════ -->
+    <header class="bx-topbar">
+      <a href="/" class="bx-back-link" id="bx-back-link">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+        Dashboard'a Dön
+      </a>
+      <div class="bx-brand">
+        <span class="bx-brand-mark" aria-hidden="true">◈</span>
+        <div>
+          <h1>GIS Benchmark</h1>
+          <p>Model Performans Analizi</p>
+        </div>
+      </div>
+      <div class="bx-topbar-right">
+        <span class="bx-status-chip" id="bx-status-chip">Hazır</span>
+      </div>
+    </header>
+
+    <!-- ═══════════════════════════════════════════════════════════════════
+         HERO
+         ═══════════════════════════════════════════════════════════════════ -->
+    <section class="bx-hero" id="bx-hero">
+      <div class="bx-hero-glow"></div>
+      <div class="bx-hero-content">
+        <div class="bx-hero-icon">🎯</div>
+        <h2>CBS Model Benchmark Testi</h2>
+        <p>
+          10 gerçek CBS senaryosu üzerinde 7 yapay zeka modelini test edin.<br/>
+          Araç seçimi, konum doğruluğu, parametre çıkarımı ve GeoJSON geçerliliği ölçülür.
+        </p>
+        <div class="bx-hero-models">
+          <span class="bx-hero-model" style="--mc:#d97757">Claude Sonnet 4.6</span>
+          <span class="bx-hero-model" style="--mc:#19c37d">GPT 5.5</span>
+          <span class="bx-hero-model" style="--mc:#f55036">Llama 3.1</span>
+          <span class="bx-hero-model" style="--mc:#5b8def">Gemini 2.5 Flash</span>
+          <span class="bx-hero-model" style="--mc:#3b82f6">DeepSeek V4 Flash</span>
+          <span class="bx-hero-model" style="--mc:#a855f7">Qwen 3.7 Flash</span>
+          <span class="bx-hero-model" style="--mc:#14b8a6">GLM 5.1</span>
+        </div>
+        <button class="bx-start-btn" id="bx-start-btn">
+          <span class="bx-start-btn-icon">▶</span>
+          Benchmark Başlat
+        </button>
+        <p class="bx-hero-note">⏱ Yaklaşık 2-3 dakika sürer · n8n workflow aktif olmalıdır</p>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════════════════════════
+         LOADING STATE
+         ═══════════════════════════════════════════════════════════════════ -->
+    <section class="bx-loading hidden" id="bx-loading">
+      <div class="bx-loading-inner">
+        <div class="bx-spinner"></div>
+        <h3>Benchmark Çalıştırılıyor…</h3>
+        <p>10 senaryo × 7 model = 70 test yürütülüyor</p>
+        <div class="bx-progress-bar">
+          <div class="bx-progress-fill" id="bx-progress-fill"></div>
+        </div>
+        <span class="bx-progress-text" id="bx-progress-text">Lütfen bekleyin…</span>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════════════════════════
+         ERROR STATE
+         ═══════════════════════════════════════════════════════════════════ -->
+    <section class="bx-error hidden" id="bx-error">
+      <div class="bx-error-box">
+        <span class="bx-error-icon">⚠️</span>
+        <h3>Benchmark Başarısız</h3>
+        <p id="bx-error-msg"></p>
+        <button class="bx-retry-btn" id="bx-retry-btn">Tekrar Dene</button>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════════════════════════
+         RESULTS
+         ═══════════════════════════════════════════════════════════════════ -->
+    <div class="bx-results hidden" id="bx-results">
+
+      <!-- ── Üst bilgi ── -->
+      <div class="bx-results-header">
+        <div>
+          <h2>📊 Benchmark Sonuçları</h2>
+          <p id="bx-results-timestamp"></p>
+        </div>
+        <button class="bx-rerun-btn" id="bx-rerun-btn">🔄 Tekrar Çalıştır</button>
+      </div>
+
+      <!-- ── Kazanan Kartı ── -->
+      <div class="bx-winner-card" id="bx-winner-card">
+        <div class="bx-winner-crown">🏆</div>
+        <div class="bx-winner-info">
+          <span class="bx-winner-label">EN İYİ MODEL</span>
+          <span class="bx-winner-name" id="bx-winner-name"></span>
+          <span class="bx-winner-score" id="bx-winner-score"></span>
+        </div>
+      </div>
+
+      <!-- ── Genel Bakış Kartları ── -->
+      <div class="bx-overview-grid" id="bx-overview-grid"></div>
+
+      <!-- ── Radar Chart ── -->
+      <div class="bx-charts-row">
+        <div class="bx-chart-card bx-chart-radar">
+          <h3>Çok Boyutlu Model Karşılaştırma</h3>
+          <div class="bx-chart-container">
+            <canvas id="bx-radar-chart"></canvas>
+          </div>
+        </div>
+        <div class="bx-chart-card bx-chart-bar">
+          <h3>Genel Doğruluk Sıralaması</h3>
+          <div class="bx-chart-container">
+            <canvas id="bx-bar-chart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Metrik Bar Charts ── -->
+      <div class="bx-metric-charts" id="bx-metric-charts">
+        <div class="bx-chart-card bx-chart-sm">
+          <h4>Araç Doğruluğu</h4>
+          <canvas id="bx-chart-tool"></canvas>
+        </div>
+        <div class="bx-chart-card bx-chart-sm">
+          <h4>Konum Doğruluğu</h4>
+          <canvas id="bx-chart-spatial"></canvas>
+        </div>
+        <div class="bx-chart-card bx-chart-sm">
+          <h4>Parametre Doğruluğu</h4>
+          <canvas id="bx-chart-param"></canvas>
+        </div>
+        <div class="bx-chart-card bx-chart-sm">
+          <h4>GeoJSON Geçerliliği</h4>
+          <canvas id="bx-chart-schema"></canvas>
+        </div>
+      </div>
+
+      <!-- ── Gecikme Karşılaştırma ── -->
+      <div class="bx-chart-card bx-chart-latency">
+        <h3>⏱ Ortalama Gecikme (ms)</h3>
+        <div class="bx-chart-container bx-chart-container-sm">
+          <canvas id="bx-chart-latency"></canvas>
+        </div>
+      </div>
+
+      <!-- ── Senaryo Detay Tablosu ── -->
+      <div class="bx-detail-section">
+        <h3>📋 Senaryo Bazlı Detay Tablosu</h3>
+        <p class="bx-detail-desc">Her test senaryosu için modellerin ayrıntılı performansı</p>
+        <div class="bx-detail-tabs" id="bx-detail-tabs"></div>
+        <div class="bx-table-legend" style="display: flex; gap: 16px; margin: 12px 0 16px; font-size: 11.5px; flex-wrap: wrap; background: var(--panel-bg-raised); padding: 10px 14px; border-radius: 8px; border: 1px solid var(--border); align-items: center;">
+          <span style="font-weight: 600; color: var(--text-dim);">Kriter Kısaltmaları:</span>
+          <span><strong style="color: #fff; background: #1c222e; padding: 2px 7px; border-radius: 4px; font-size: 10px; font-family: 'JetBrains Mono', monospace; margin-right: 5px;">A</strong>Araç Seçimi</span>
+          <span><strong style="color: #fff; background: #1c222e; padding: 2px 7px; border-radius: 4px; font-size: 10px; font-family: 'JetBrains Mono', monospace; margin-right: 5px;">K</strong>Konum Doğruluğu <span style="color: var(--text-faint); font-size: 10px;">(≤2 km)</span></span>
+          <span><strong style="color: #fff; background: #1c222e; padding: 2px 7px; border-radius: 4px; font-size: 10px; font-family: 'JetBrains Mono', monospace; margin-right: 5px;">P</strong>Parametre Doğruluğu</span>
+          <span><strong style="color: #fff; background: #1c222e; padding: 2px 7px; border-radius: 4px; font-size: 10px; font-family: 'JetBrains Mono', monospace; margin-right: 5px;">Ş</strong>GeoJSON Şema Geçerliliği</span>
+          <span style="margin-left: auto; display: flex; gap: 10px; align-items: center;">
+            <span style="display:flex;align-items:center;gap:4px;color:#19c37d;font-size:11px;font-weight:600;"><span style="background:rgba(25,195,125,0.15);border:1px solid rgba(25,195,125,0.4);padding:1px 7px;border-radius:3px;">✓</span> Doğru</span>
+            <span style="display:flex;align-items:center;gap:4px;color:#f55036;font-size:11px;font-weight:600;"><span style="background:rgba(245,80,54,0.15);border:1px solid rgba(245,80,54,0.4);padding:1px 7px;border-radius:3px;">✗</span> Yanlış</span>
+            <span style="display:flex;align-items:center;gap:4px;color:var(--text-faint);font-size:11px;"><span style="background:rgba(255,255,255,0.05);padding:1px 7px;border-radius:3px;">–</span> Yok</span>
+          </span>
+        </div>
+
+        <div class="bx-detail-table-wrap">
+          <table class="bx-detail-table" id="bx-detail-table">
+            <thead id="bx-detail-thead"></thead>
+            <tbody id="bx-detail-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ── Metodoloji ── -->
+      <div class="bx-methodology">
+        <h3>📐 Puanlama Metodolojisi</h3>
+        <div class="bx-method-grid">
+          <div class="bx-method-item">
+            <span class="bx-method-icon">🔧</span>
+            <div>
+              <strong>Araç Doğruluğu (Tool Accuracy)</strong>
+              <p>Beklenen GIS aracının doğru seçilme oranı. Berkeley Function-Calling Leaderboard AST-match yaklaşımına benzer exact match.</p>
+            </div>
+          </div>
+          <div class="bx-method-item">
+            <span class="bx-method-icon">📍</span>
+            <div>
+              <strong>Konum Doğruluğu (Spatial Accuracy)</strong>
+              <p>Geocoding sonucunun gerçek konuma 2 km eşik değeri içinde olma oranı. Haversine formülü ile ölçülür.</p>
+            </div>
+          </div>
+          <div class="bx-method-item">
+            <span class="bx-method-icon">⚙️</span>
+            <div>
+              <strong>Parametre Doğruluğu (Param Accuracy)</strong>
+              <p>feature_type ve distance_meters parametrelerinin doğru çıkarılma oranı.</p>
+            </div>
+          </div>
+          <div class="bx-method-item">
+            <span class="bx-method-icon">✅</span>
+            <div>
+              <strong>GeoJSON Geçerliliği (Schema Validity)</strong>
+              <p>Çıktı GeoJSON'un geçerli FeatureCollection olma oranı.</p>
+            </div>
+          </div>
+        </div>
+        <div class="bx-method-footer">
+          10 test senaryosu · 7 model · Konum eşik: 2 km (Haversine) · Geocoding-benchmark literatüründen esinlenilmiştir
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="/static/benchmark_app.js?v=4"></script>
+</body>
+</html>

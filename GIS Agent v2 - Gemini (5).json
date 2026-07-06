@@ -1,0 +1,281 @@
+{
+  "name": "GIS Agent v2 - Gemini",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "gis-gemini",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "83fd2f94-f0fa-4f8b-b1fa-fa3bc3a30e10",
+      "name": "Webhook - Gemini",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "webhookId": "981f517d-ed25-4669-b939-08148dc24a54"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "b95efa82-5ae6-4d73-87e1-b5b4b692a1e7",
+              "name": "message",
+              "value": "={{ $json.body && $json.body.message ? $json.body.message : ($json.message || '') }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "8800fb38-b44f-415c-8246-17a7589f7f5a",
+      "name": "Read Message",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        240,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.message }}",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "Sen bir CBS (GIS) analiz uzmanısın. Türkçe doğal dil komutlarını analiz edersin.\n\nKESİN KURAL — Bunu ÇİĞNEMEK YASAK:\nCevap üretmeden ÖNCE, kullanıcının komutunda geçen HER konum adı (örn: Beşiktaş, Kadıköy, Taksim, İstanbul) için \"Nominatim Geocoding Tool\" aracını ZORUNLU olarak çağıracaksın. Hafızandan koordinat üretmek YASAK.\n\nNESNE TÜRÜ ÇEVİRİSİ (OSM etiketleri):\neczane → pharmacy\nhastane → hospital\ncafe/kafe → cafe\nokul → school\nmarket/süpermarket → supermarket\npark → park\nbanka → bank\nrestoran → restaurant\ncami → place_of_worship\notobüs durağı → bus_station\nbenzin istasyonu → fuel\nATM → atm\notel → hotel\n\nPARAMETRELERIN YAZILIŞI:\n- location_name = ana konum/bölge adı\n- latitude/longitude = Nominatim'den gelen koordinatlar\n- feature_type = BİRİNCİL nesne türü (komutta ilk geçen)\n- secondary_feature_type = İKİNCİL nesne türü\n- distance_meters = mesafe (yoksa 500)\n\nÖRNEKLER (dikkatle oku):\n\"Kadıköy'deki parkların etrafına 300m tampon çiz\"\n→ feature_type=park, distance_meters=300, selected_tool=Buffer\n   (DİKKAT: feature_type'ı ASLA boş bırakma, parkları aramalıyız)\n\n\"Şişli'deki eczanelere en yakın hastaneyi bul\"\n→ feature_type=pharmacy, secondary_feature_type=hospital, selected_tool=NearestSearch\n\n\"Beşiktaş'taki hastanelere en yakın eczanelere uğrayan rota\"\n→ feature_type=hospital, secondary_feature_type=pharmacy, selected_tool=Routing\n\n\"Kadıköy'deki eczanelerin 300m bufferi ile okulların kesişimi\"\n→ feature_type=pharmacy, secondary_feature_type=school, distance_meters=300, selected_tool=Intersection\n\n\"Taksim'in koordinatını Mercator'a çevir\"\n→ location_name=Taksim, selected_tool=CoordinateTransform\n\nARAÇ SEÇİMİ:\n- Geocode, Buffer, AttributeQuery, AttributeTable, NearestSearch, Routing, Intersection, Union, CoordinateTransform, PointDensity\n\nÖNEMLİ: \"Buffer\" araçlarında bile feature_type'ı doldur (örn parklara buffer, eczanelere buffer). Boş bırakırsan sadece bölge merkezine tek buffer çizilir.\nKRİTİK ZORUNLULUK (SCHEMA REQUIRED ALANLAR):\n\"feature_type\" ve \"distance_meters\" alanları artık ZORUNLU (required) alanlardır. Bu alanları ASLA boş/atlanmış bırakma. Eğer komutta nesne türü yoksa (örn. sadece koordinat dönüşümü) feature_type için boş string \"\" gönder ama ALANI MUTLAKA JSON çıktısına dahil et.\n\nEK ÖRNEK (çoğul/hal eki varyasyonları için):\n\"Hastanelerin etrafına 200m tampon\" / \"hastanelere 200m buffer\" / \"hastanelerdeki\" -> hepsi aynı anlama gelir: feature_type=hospital, distance_meters=200, selected_tool=Buffer\n(Türkçe hal eki -ler/-lerin/-lere/-lerde farketmez, KÖK kelimeyi bulup feature_type alanına HER ZAMAN İngilizce OSM karşılığını yaz, asla Türkçe haliyle bırakma.)\n"
+        }
+      },
+      "id": "87c84e6d-5166-4983-adcc-5a64a81dffe0",
+      "name": "Gemini GIS Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [
+        480,
+        0
+      ],
+      "retryOnFail": true,
+      "waitBetweenTries": 2000
+    },
+    {
+      "parameters": {
+        "toolDescription": "Yer adini koordinatlara cevirir. ZORUNLU olarak cagir.",
+        "url": "https://nominatim.openstreetmap.org/search",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "q",
+              "value": "={{ $fromAI('searchQuery', 'Aranacak yer adi + Istanbul', 'string', 'Istanbul') }}"
+            },
+            {
+              "name": "format",
+              "value": "json"
+            },
+            {
+              "name": "limit",
+              "value": "5"
+            },
+            {
+              "name": "addressdetails",
+              "value": "1"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "User-Agent",
+              "value": "n8n-gis-workflow"
+            }
+          ]
+        },
+        "options": {
+          "allowUnauthorizedCerts": true
+        }
+      },
+      "id": "e980a9a0-ba6c-4a9b-b1ce-277c8c5fb2ba",
+      "name": "Nominatim Geocoding Tool",
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.4,
+      "position": [
+        576,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"selected_tool\": {\n      \"type\": \"string\",\n      \"enum\": [\n        \"Geocode\",\n        \"Buffer\",\n        \"AttributeQuery\",\n        \"AttributeTable\",\n        \"NearestSearch\",\n        \"PointDensity\",\n        \"Intersection\",\n        \"Union\",\n        \"Routing\",\n        \"CoordinateTransform\"\n      ]\n    },\n    \"explanation\": {\n      \"type\": \"string\"\n    },\n    \"parameters\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"location_name\": {\n          \"type\": \"string\"\n        },\n        \"latitude\": {\n          \"type\": \"number\"\n        },\n        \"longitude\": {\n          \"type\": \"number\"\n        },\n        \"distance_meters\": {\n          \"type\": \"number\"\n        },\n        \"feature_type\": {\n          \"type\": \"string\"\n        },\n        \"secondary_feature_type\": {\n          \"type\": \"string\"\n        }\n      },\n      \"required\": [\n        \"location_name\",\n        \"latitude\",\n        \"longitude\"\n      ]\n    }\n  },\n  \"required\": [\n    \"selected_tool\",\n    \"parameters\",\n    \"explanation\"\n  ]\n}"
+      },
+      "id": "d9ce465b-15f1-4135-afa3-39ed4a38cc99",
+      "name": "Structured GIS Output",
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        720,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// =====================================================================\n// GIS ENGINE — TAM YENIDEN YAZIM (crash-proof, 60sn node limitine takilmaz)\n// Her model workflow'unda kullanilabilir; sadece asagidaki MODEL_KEY'i degistir.\n// =====================================================================\nvar MODEL_KEY = 'gemini';   // Hangi modeldeyse bunu yazın: 'claude' | 'gpt' | 'groq' | 'gemini' | 'deepseek' | 'qwen' | 'glm'\n\n// ---------- 0) Girdi cozumleme ----------\nvar raw = items[0].json;\nvar parsed = raw;\nif (raw && raw.output !== undefined) { parsed = raw.output; }\nif (typeof parsed === 'string') { try { parsed = JSON.parse(parsed); } catch (e) { parsed = {}; } }\nif (!parsed || typeof parsed !== 'object') { parsed = {}; }\n\nvar p = (parsed.parameters && typeof parsed.parameters === 'object') ? parsed.parameters : {};\nvar tool = parsed.selected_tool || 'AttributeTable';\nvar explanation = parsed.explanation || '';\n\nvar rawUserMessage = '';\ntry { rawUserMessage = $('Read Message').first().json.message || ''; } catch (e) { rawUserMessage = ''; }\n\n// ---------- 1) Tur cevirileri ----------\nfunction normalizeFeatureType(name) {\n  var n = String(name || '').toLowerCase().trim();\n  var map = {\n    'eczane': 'pharmacy', 'eczaneler': 'pharmacy', 'eczanenin': 'pharmacy', 'pharmacy': 'pharmacy',\n    'hastane': 'hospital', 'hastaneler': 'hospital', 'hospital': 'hospital',\n    'kafe': 'cafe', 'kafeler': 'cafe', 'cafe': 'cafe',\n    'okul': 'school', 'okullar': 'school', 'school': 'school',\n    'market': 'supermarket', 'marketler': 'supermarket', 'supermarket': 'supermarket',\n    'sukermarket': 'supermarket', 'supermarketler': 'supermarket',\n    'park': 'park', 'parklar': 'park',\n    'banka': 'bank', 'bankalar': 'bank', 'bank': 'bank',\n    'restoran': 'restaurant', 'restoranlar': 'restaurant', 'restaurant': 'restaurant',\n    'cami': 'place_of_worship', 'camii': 'place_of_worship', 'camiler': 'place_of_worship', 'place_of_worship': 'place_of_worship',\n    'otobus': 'bus_station', 'bus_station': 'bus_station',\n    'benzin': 'fuel', 'fuel': 'fuel',\n    'atm': 'atm',\n    'otel': 'hotel', 'oteller': 'hotel', 'hotel': 'hotel',\n    'muze': 'museum', 'museum': 'museum'\n  };\n  return map[n] || n;\n}\n\nfunction detectFeatureTypesFromText(text) {\n  var t = String(text || '').toLocaleLowerCase('tr-TR');\n  var roots = [\n    ['eczane', 'pharmacy'], ['hastane', 'hospital'], ['kafe', 'cafe'], ['cafe', 'cafe'],\n    ['okul', 'school'], ['süpermarket', 'supermarket'], ['market', 'supermarket'], ['supermarket', 'supermarket'],\n    ['park', 'park'], ['banka', 'bank'], ['bank', 'bank'], ['restoran', 'restaurant'], ['restaurant', 'restaurant'],\n    ['cami', 'place_of_worship'], ['durağ', 'bus_station'], ['otobüs', 'bus_station'],\n    ['benzin', 'fuel'], ['akaryakıt', 'fuel'], ['atm', 'atm'], ['otel', 'hotel'], ['hotel', 'hotel'],\n    ['müze', 'museum'], ['museum', 'museum']\n  ];\n  var found = [];\n  for (var i = 0; i < roots.length; i++) {\n    var idx = t.indexOf(roots[i][0]);\n    if (idx !== -1) found.push({ idx: idx, type: roots[i][1] });\n  }\n  found.sort(function (a, b) { return a.idx - b.idx; });\n  var ordered = [];\n  for (var j = 0; j < found.length; j++) { if (ordered.indexOf(found[j].type) === -1) ordered.push(found[j].type); }\n  return ordered;\n}\n\nvar primary = normalizeFeatureType(p.feature_type || '');\nvar secondary = normalizeFeatureType(p.secondary_feature_type || '');\nif (!primary || !secondary) {\n  var detected = detectFeatureTypesFromText(rawUserMessage);\n  if (!primary && detected[0]) primary = detected[0];\n  if (!secondary && detected[1] && detected[1] !== primary) secondary = detected[1];\n}\n\nvar distance = Number(p.distance_meters) || 500;\nvar secondaryDistance = Number(p.secondary_distance_meters) || distance;\nvar lat = Number(p.latitude);\nvar lon = Number(p.longitude);\nvar loc = String(p.location_name || '').replace(/\"/g, '').trim();\n\nfunction osmTag(name) {\n  var n = String(name || '').toLowerCase();\n  var map = {\n    'park': ['leisure', 'park'], 'playground': ['leisure', 'playground'], 'garden': ['leisure', 'garden'],\n    'sports_centre': ['leisure', 'sports_centre'], 'stadium': ['leisure', 'stadium'],\n    'supermarket': ['shop', 'supermarket'], 'mall': ['shop', 'mall'], 'convenience': ['shop', 'convenience'], 'bakery': ['shop', 'bakery'],\n    'hotel': ['tourism', 'hotel'], 'museum': ['tourism', 'museum']\n  };\n  if (map[n]) return map[n];\n  return ['amenity', n];\n}\n\n// ---------- 2) Zaman butcesi & guvenli HTTP ----------\nvar t0 = Date.now();\nvar DEADLINE = t0 + 45000;                 // 45 sn sert ust sinir\nvar httpRequest = this.helpers.httpRequest.bind(this.helpers);\n\nfunction sleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }\n\nvar lastOverpassError = ''; \n\nasync function overpassQuery(req, body, deadline) {\n  // Hizli alternatiflerin yer aldigi sunucu listesi (Mirror List)\n  var endpoints = [\n    'https://overpass-api.de/api/interpreter',\n    'https://lz4.overpass-api.de/api/interpreter',\n    'https://z.overpass-api.de/api/interpreter',\n    'https://overpass.kumi.systems/api/interpreter'\n  ];\n  for (var k = 0; k < endpoints.length; k++) {\n    var remaining = deadline - Date.now();\n    if (remaining < 3000) return null;\n    // Bekleme süresini 8 saniyeye çıkardık\n    var perTimeout = Math.min(8000, remaining - 500);\n    if (perTimeout < 1500) return null;\n    try {\n      var resp = await req({\n        method: 'POST', url: endpoints[k],\n        body: 'data=' + encodeURIComponent(body),\n        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },\n        json: false, timeout: perTimeout\n      });\n      var data = typeof resp === 'string' ? JSON.parse(resp) : resp;\n      if (data && Array.isArray(data.elements)) return data.elements;\n      lastOverpassError = 'Beklenmeyen yanit (elements yok): ' + String(resp).slice(0, 200);\n    } catch (e) {\n      var msg = (e && e.message) ? e.message : String(e);\n      var sc = (e && (e.statusCode || (e.response && e.response.statusCode))) || '';\n      var bodyErr = '';\n      try { bodyErr = e && e.response && e.response.body ? String(e.response.body).slice(0, 200) : ''; } catch (ee) {}\n      lastOverpassError = endpoints[k] + ' -> ' + (sc ? ('HTTP ' + sc + ' | ') : '') + msg + (bodyErr ? (' | ' + bodyErr) : '');\n      if (deadline - Date.now() > 4000) { await sleep(300); }\n    }\n  }\n  return null;\n}\n\nfunction overpassEscape(s) { return String(s || '').replace(/[\\\"\\\\]/g, ''); }\n\n// ---------- 3) OSM'den nesneleri cek ----------\nvar elements = [];\nvar fetchFailed = false;\n\nif ((primary || secondary) && !isNaN(lat) && !isNaN(lon)) {\n  await sleep(Math.floor(Math.random() * 500));\n\n  var t1 = primary ? osmTag(primary) : null;\n  var t2 = secondary ? osmTag(secondary) : null;\n  var searchRadius = Math.max(3000, distance * 5);\n  var around = '(around:' + searchRadius + ',' + lat + ',' + lon + ')';\n\n  var gotAnswer = false;\n\n  if (loc) {\n    var innerArea = '';\n    if (t1) innerArea += 'node(area.a)[' + t1[0] + '=' + t1[1] + '];way(area.a)[' + t1[0] + '=' + t1[1] + '];';\n    if (t2) innerArea += 'node(area.a)[' + t2[0] + '=' + t2[1] + '];way(area.a)[' + t2[0] + '=' + t2[1] + '];';\n    var areaBody = '[out:json][timeout:10];area[\"name\"=\"' + overpassEscape(loc) + '\"][\"boundary\"=\"administrative\"]->.a;(' + innerArea + ');out center;';\n    var areaEls = await overpassQuery(httpRequest, areaBody, Math.min(DEADLINE, Date.now() + 12000));\n    if (areaEls !== null) { gotAnswer = true; if (areaEls.length > 0) elements = areaEls; }\n  }\n\n  if (elements.length === 0) {\n    var innerRad = '';\n    if (t1) innerRad += 'node[' + t1[0] + '=' + t1[1] + ']' + around + ';way[' + t1[0] + '=' + t1[1] + ']' + around + ';';\n    if (t2) innerRad += 'node[' + t2[0] + '=' + t2[1] + ']' + around + ';way[' + t2[0] + '=' + t2[1] + ']' + around + ';';\n    var radBody = '[out:json][timeout:15];(' + innerRad + ');out center;';\n    var radEls = await overpassQuery(httpRequest, radBody, DEADLINE);\n    if (radEls !== null) { gotAnswer = true; elements = radEls; }\n  }\n\n  if (!gotAnswer) fetchFailed = true;\n}\n\n// ---------- 4) Geometri yardimcilari ----------\nfunction destPoint(la, lo, d, br) {\n  var R = 6371000, brng = br * Math.PI / 180, la1 = la * Math.PI / 180, lo1 = lo * Math.PI / 180, dByR = d / R;\n  var la2 = Math.asin(Math.sin(la1) * Math.cos(dByR) + Math.cos(la1) * Math.sin(dByR) * Math.cos(brng));\n  var lo2 = lo1 + Math.atan2(Math.sin(brng) * Math.sin(dByR) * Math.cos(la1), Math.cos(dByR) - Math.sin(la1) * Math.sin(la2));\n  return [lo2 * 180 / Math.PI, la2 * 180 / Math.PI];\n}\nfunction haversine(la1, lo1, la2, lo2) {\n  var R = 6371000, dLat = (la2 - la1) * Math.PI / 180, dLon = (lo2 - lo1) * Math.PI / 180;\n  var a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(la1 * Math.PI / 180) * Math.cos(la2 * Math.PI / 180) * Math.sin(dLon / 2) * Math.sin(dLon / 2);\n  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));\n}\nfunction bufferRing(la, lo, d) { var r = []; for (var b = 0; b <= 360; b += 15) r.push(destPoint(la, lo, d, b)); return r; }\nfunction matchesTag(el, name) { if (!name || !el.tags) return false; var tg = osmTag(name); return el.tags[tg[0]] === tg[1]; }\nfunction elementCoords(el) {\n  if (el.lat !== undefined && el.lon !== undefined) return [el.lon, el.lat];\n  if (el.center) return [el.center.lon, el.center.lat];\n  return null;\n}\n\n// ── KOORDINAT / DATUM DONUSUM YARDIMCISI (ONLINE API + LOCAL FALLBACK) ──\nasync function performCoordinateTransform(lo, la, sourceCRS, targetCRS, reqHelper) {\n  var cleanSrc = String(sourceCRS || '4326').toUpperCase().replace('EPSG:', '').trim();\n  var cleanTgt = String(targetCRS || '3857').toUpperCase().replace('EPSG:', '').trim();\n  var isTargetGeographic = (cleanTgt === '4326' || cleanTgt === 'WGS84');\n\n  if (cleanSrc === cleanTgt) {\n    return { \n      x: lo, \n      y: la, \n      label_x: isTargetGeographic ? 'transformed_longitude' : 'transformed_x_meters', \n      label_y: isTargetGeographic ? 'transformed_latitude' : 'transformed_y_meters', \n      method: 'same' \n    };\n  }\n\n  try {\n    var url = 'https://epsg.io/trans?x=' + lo + '&y=' + la + '&s_srs=' + cleanSrc + '&t_srs=' + cleanTgt;\n    var resp = await reqHelper({ method: 'GET', url: url, json: true, timeout: 4000 });\n    if (resp && resp.x !== undefined && resp.y !== undefined) {\n      return {\n        x: isTargetGeographic ? Math.round(Number(resp.x) * 1000000) / 1000000 : Math.round(Number(resp.x) * 100) / 100,\n        y: isTargetGeographic ? Math.round(Number(resp.y) * 1000000) / 1000000 : Math.round(Number(resp.y) * 100) / 100,\n        label_x: isTargetGeographic ? 'transformed_longitude' : 'transformed_latitude',\n        label_y: isTargetGeographic ? 'transformed_latitude' : 'transformed_y_meters',\n        method: 'epsg_io_api'\n      };\n    }\n  } catch (e) {}\n\n  var target = cleanTgt.toLowerCase();\n  if (target === 'grs80' || target === '4230' || target === 'ed50') {\n    var dx = 84.0, dy = -37.0, dz = -123.0; \n    var a = 6378137.0, f = 1.0 / 298.257223563;\n    var esq = 2 * f - f * f;\n    var phi = la * Math.PI / 180;\n    var lam = lo * Math.PI / 180;\n    var sinPhi = Math.sin(phi), cosPhi = Math.cos(phi);\n    var nu = a / Math.sqrt(1 - esq * sinPhi * sinPhi);\n    var x = nu * cosPhi * Math.cos(lam) + dx;\n    var y = nu * cosPhi * Math.sin(lam) + dy;\n    var z = nu * (1 - esq) * sinPhi + dz;\n    var a_g = 6378137.0, f_g = 1.0 / 298.257222101; \n    var esq_g = 2 * f_g - f_g * f_g;\n    var p_rad = Math.sqrt(x*x + y*y);\n    var phi_g = Math.atan2(z, p_rad * (1 - esq_g));\n    for (var it = 0; it < 5; it++) {\n      var sinPhiG = Math.sin(phi_g);\n      var nu_g = a_g / Math.sqrt(1 - esq_g * sinPhiG * sinPhiG);\n      phi_g = Math.atan2(z + esq_g * nu_g * sinPhiG, p_rad);\n    }\n    return {\n      x: Math.round((Math.atan2(y, x) * 180 / Math.PI) * 1000000) / 1000000,\n      y: Math.round((phi_g * 180 / Math.PI) * 1000000) / 1000000,\n      label_x: 'transformed_longitude',\n      label_y: 'transformed_latitude',\n      method: 'local_helmert'\n    };\n  }\n\n  var R_w = 6378137.0;\n  var mx = R_w * lo * Math.PI / 180;\n  var my = R_w * Math.log(Math.tan(Math.PI / 4 + la * Math.PI / 360));\n  return {\n    x: Math.round(mx * 100) / 100,\n    y: Math.round(my * 100) / 100,\n    label_x: 'transformed_x_meters',\n    label_y: 'transformed_y_meters',\n    method: 'local_mercator'\n  };\n}\n\n// ---------- 5) Nesneleri ayikla ----------\nvar primaryFeats = [], secondaryFeats = [];\nfor (var i2 = 0; i2 < elements.length; i2++) {\n  var el = elements[i2];\n  if (!el.tags) continue;\n  var c = elementCoords(el);\n  if (!c) continue;\n  var feat = {\n    type: 'Feature',\n    properties: {\n      name: el.tags.name || '(adsiz)',\n      type: el.tags.amenity || el.tags.leisure || el.tags.shop || el.tags.tourism || '',\n      latitude: c[1], longitude: c[0]\n    },\n    geometry: { type: 'Point', coordinates: c }\n  };\n  if (primary && matchesTag(el, primary)) primaryFeats.push(feat);\n  if (secondary && matchesTag(el, secondary)) secondaryFeats.push(feat);\n}\n\n// ---------- 6) Araclar ----------\nvar resultFeatures = [], attributeTable = [];\nvar toolLower = String(tool).toLowerCase();\n\nif (toolLower === 'geocode' && !isNaN(lat) && !isNaN(lon)) {\n  resultFeatures.push({ type: 'Feature', properties: { name: loc, type: 'center', latitude: lat, longitude: lon }, geometry: { type: 'Point', coordinates: [lon, lat] } });\n  attributeTable.push({ name: loc, type: 'center', latitude: lat, longitude: lon });\n\n} else if (toolLower === 'coordinatetransform') {\n  var srcCRS = p.source_crs || 'EPSG:4326';\n  var tgtCRS = p.target_crs || 'EPSG:3857';\n  var queryLower = rawUserMessage.toLowerCase();\n  \n  var epsgMatches = queryLower.match(/epsg\\s*[:\\s]*(\\d+)/g);\n  if (epsgMatches && epsgMatches.length >= 2) {\n    srcCRS = epsgMatches[0].replace(/[\\s:]/g, '').toUpperCase();\n    tgtCRS = epsgMatches[1].replace(/[\\s:]/g, '').toUpperCase();\n  } else if (queryLower.indexOf('4326') !== -1 && (queryLower.indexOf('grs80') !== -1 || queryLower.indexOf('grs 80') !== -1)) {\n    srcCRS = 'EPSG:4326';\n    tgtCRS = 'GRS80';\n  } else if (queryLower.indexOf('3857') !== -1 && queryLower.indexOf('4326') !== -1) {\n    srcCRS = 'EPSG:3857';\n    tgtCRS = 'EPSG:4326';\n  }\n\n  if (!isNaN(lat) && !isNaN(lon)) {\n    var tcCenter = await performCoordinateTransform(lon, lat, srcCRS, tgtCRS, httpRequest);\n    resultFeatures.push({ type: 'Feature', properties: { name: loc + \" (Merkez)\", type: 'center', latitude: lat, longitude: lon }, geometry: { type: 'Point', coordinates: [lon, lat] } });\n    var centerRow = { name: loc + \" (Merkez)\", source_crs: srcCRS, target_crs: tgtCRS };\n    centerRow[tcCenter.label_x] = tcCenter.x;\n    centerRow[tcCenter.label_y] = tcCenter.y;\n    attributeTable.push(centerRow);\n  }\n  \n  for (var m = 0; m < primaryFeats.length; m++) {\n    var pf = primaryFeats[m];\n    var tcNode = await performCoordinateTransform(pf.geometry.coordinates[0], pf.geometry.coordinates[1], srcCRS, tgtCRS, httpRequest);\n    resultFeatures.push(pf);\n    var nodeRow = { name: pf.properties.name, source_crs: srcCRS, target_crs: tgtCRS };\n    nodeRow[tcNode.label_x] = tcNode.x;\n    nodeRow[tcNode.label_y] = tcNode.y;\n    attributeTable.push(nodeRow);\n  }\n  explanation = (explanation || '') + ' (' + srcCRS + ' CRS kodundan ' + tgtCRS + ' CRS koduna koordinat donusumu yapildi.)';\n\n} else if (toolLower === 'routing' && !isNaN(lat) && !isNaN(lon)) {\n  var stops = secondaryFeats.length > 0 ? secondaryFeats.slice() : primaryFeats.slice();\n  if (stops.length === 0 && !isNaN(Number(p.destination_latitude)) && !isNaN(Number(p.destination_longitude))) {\n    stops = [{ type: 'Feature', properties: { name: 'Hedef', type: '' }, geometry: { type: 'Point', coordinates: [Number(p.destination_longitude), Number(p.destination_latitude)] } }];\n  }\n  if (stops.length > 8) stops = stops.slice(0, 8);\n  var ordered = [], curLat = lat, curLon = lon, remaining2 = stops.slice();\n  while (remaining2.length > 0) {\n    var bi = 0, bd = Infinity;\n    for (var ri = 0; ri < remaining2.length; ri++) {\n      var dr = haversine(curLat, curLon, remaining2[ri].geometry.coordinates[1], remaining2[ri].geometry.coordinates[0]);\n      if (dr < bd) { bd = dr; bi = ri; }\n    }\n    var nxt = remaining2.splice(bi, 1)[0];\n    ordered.push(nxt); curLat = nxt.geometry.coordinates[1]; curLon = nxt.geometry.coordinates[0];\n  }\n  if (ordered.length > 0 && (DEADLINE - Date.now()) > 6000) {\n    var coordsList = [lon + ',' + lat];\n    for (var oi = 0; oi < ordered.length; oi++) coordsList.push(ordered[oi].geometry.coordinates[0] + ',' + ordered[oi].geometry.coordinates[1]);\n    var url = 'https://router.project-osrm.org/route/v1/driving/' + coordsList.join(';') + '?overview=full&geometries=geojson';\n    try {\n      var rr = await httpRequest({ method: 'GET', url: url, json: true, timeout: Math.min(12000, DEADLINE - Date.now() - 1000) });\n      if (rr && rr.routes && rr.routes.length > 0) {\n        var rt = rr.routes[0];\n        resultFeatures.push({ type: 'Feature', properties: { name: loc, type: 'start', sequence: 0, latitude: lat, longitude: lon }, geometry: { type: 'Point', coordinates: [lon, lat] } });\n        for (var oi2 = 0; oi2 < ordered.length; oi2++) {\n          var st = ordered[oi2];\n          resultFeatures.push({ type: 'Feature', properties: { name: st.properties.name, type: 'stop', sequence: oi2 + 1, latitude: st.geometry.coordinates[1], longitude: st.geometry.coordinates[0] }, geometry: { type: 'Point', coordinates: st.geometry.coordinates } });\n          attributeTable.push({ sequence: oi2 + 1, name: st.properties.name, latitude: st.geometry.coordinates[1], longitude: st.geometry.coordinates[0] });\n        }\n        resultFeatures.push({ type: 'Feature', properties: { type: 'route', total_distance_km: Math.round(rt.distance / 100) / 10, total_duration_min: Math.round(rt.duration / 60), stops_count: ordered.length }, geometry: rt.geometry });\n        attributeTable.unshift({ sequence: 'TOPLAM', name: ordered.length + ' durak', latitude: '-', longitude: '-', total_km: Math.round(rt.distance / 100) / 10, total_min: Math.round(rt.duration / 60) });\n      }\n    } catch (e) { }\n  }\n\n} else if (toolLower === 'buffer' && !isNaN(lat) && !isNaN(lon)) {\n  if (primaryFeats.length > 0) {\n    for (var kk = 0; kk < primaryFeats.length; kk++) {\n      var f = primaryFeats[kk];\n      resultFeatures.push(f);\n      resultFeatures.push({ type: 'Feature', properties: { type: 'buffer', source: f.properties.name, distance_meters: distance }, geometry: { type: 'Polygon', coordinates: [bufferRing(f.geometry.coordinates[1], f.geometry.coordinates[0], distance)] } });\n      attributeTable.push(f.properties);\n    }\n    explanation = (explanation || '') + ' (' + primaryFeats.length + ' adet bulundu; her birine ' + distance + 'm tampon cizildi.)';\n  } else {\n    explanation = fetchFailed\n      ? ('Veri kaynagina (OpenStreetMap/Overpass) ulasilamadi. Teshis: ' + (lastOverpassError || 'bilinmiyor'))\n      : ('\"' + loc + '\" sinirlari icinde \"' + primary + '\" turunde nesne bulunamadi.');\n  }\n\n} else if (toolLower === 'nearestsearch' && primaryFeats.length > 0 && secondaryFeats.length > 0) {\n  for (var n = 0; n < primaryFeats.length; n++) {\n    var pf = primaryFeats[n], best = null, bestDist = Infinity;\n    for (var s2 = 0; s2 < secondaryFeats.length; s2++) {\n      var sf = secondaryFeats[s2];\n      var dd = haversine(pf.geometry.coordinates[1], pf.geometry.coordinates[0], sf.geometry.coordinates[1], sf.geometry.coordinates[0]);\n      if (dd < bestDist) { bestDist = dd; best = sf; }\n    }\n    resultFeatures.push(pf);\n    if (best) {\n      resultFeatures.push(best);\n      resultFeatures.push({ type: 'Feature', properties: { type: 'connection', distance_meters: Math.round(bestDist) }, geometry: { type: 'LineString', coordinates: [pf.geometry.coordinates, best.geometry.coordinates] } });\n      attributeTable.push({ from: pf.properties.name, from_lat: pf.geometry.coordinates[1], from_lon: pf.geometry.coordinates[0], to: best.properties.name, to_lat: best.geometry.coordinates[1], to_lon: best.geometry.coordinates[0], distance_meters: Math.round(bestDist) });\n    }\n  }\n\n} else if ((toolLower === 'intersection' || toolLower === 'union') && primaryFeats.length > 0 && secondaryFeats.length > 0) {\n  for (var pi = 0; pi < primaryFeats.length; pi++) {\n    for (var si = 0; si < secondaryFeats.length; si++) {\n      var pp = primaryFeats[pi], ss = secondaryFeats[si];\n      var dd2 = haversine(pp.geometry.coordinates[1], pp.geometry.coordinates[0], ss.geometry.coordinates[1], ss.geometry.coordinates[0]);\n      var overlap = dd2 <= (distance + secondaryDistance);\n      if ((toolLower === 'intersection' && overlap) || toolLower === 'union') {\n        resultFeatures.push(pp, ss);\n        if (toolLower === 'intersection') {\n          var intersectionCoords = [];\n          var steps = 32;\n          for (var idx = 0; idx < steps; idx++) {\n            var angle = (idx * 360) / steps;\n            var pt1 = destPoint(pp.geometry.coordinates[1], pp.geometry.coordinates[0], distance, angle);\n            var dToSec = haversine(pt1[1], pt1[0], ss.geometry.coordinates[1], ss.geometry.coordinates[0]);\n            if (dToSec <= secondaryDistance) {\n              intersectionCoords.push(pt1);\n            }\n          }\n          for (var idx = 0; idx < steps; idx++) {\n            var angle = (idx * 360) / steps;\n            var pt2 = destPoint(ss.geometry.coordinates[1], ss.geometry.coordinates[0], secondaryDistance, angle);\n            var dToPri = haversine(pt2[1], pt2[0], pp.geometry.coordinates[1], pp.geometry.coordinates[0]);\n            if (dToPri <= distance) {\n              intersectionCoords.push(pt2);\n            }\n          }\n          if (intersectionCoords.length >= 3) {\n            var sumX = 0, sumY = 0;\n            for (var cIdx = 0; cIdx < intersectionCoords.length; cIdx++) {\n              sumX += intersectionCoords[cIdx][0];\n              sumY += intersectionCoords[cIdx][1];\n            }\n            var centerX = sumX / intersectionCoords.length;\n            var centerY = sumY / intersectionCoords.length;\n            intersectionCoords.sort(function (a, b) {\n              return Math.atan2(a[1] - centerY, a[0] - centerX) - Math.atan2(b[1] - centerY, b[0] - centerX);\n            });\n            intersectionCoords.push(intersectionCoords[0]);\n            resultFeatures.push({\n              type: 'Feature',\n              properties: {\n                type: 'buffer',\n                source: pp.properties.name + ' - ' + ss.properties.name + ' Kesisimi',\n                distance_meters: dd2\n              },\n              geometry: { type: 'Polygon', coordinates: [intersectionCoords] }\n            });\n          }\n        }\n        attributeTable.push({ primary: pp.properties.name, secondary: ss.properties.name, distance_meters: Math.round(dd2), overlap: overlap });\n      }\n    }\n  }\n\n} else if (toolLower.indexOf('density') !== -1 || toolLower.indexOf('heatmap') !== -1 || toolLower.indexOf('kde') !== -1) {\n  var searchRadius = distance || 500;\n  \n  if (primaryFeats.length > 0) {\n    // 1) Sınır kutusu (Bounding box) bul\n    var minLat = Infinity, maxLat = -Infinity, minLon = Infinity, maxLon = -Infinity;\n    for (var fIdx = 0; fIdx < primaryFeats.length; fIdx++) {\n      var coords = primaryFeats[fIdx].geometry.coordinates;\n      if (coords[0] < minLon) minLon = coords[0];\n      if (coords[0] > maxLon) maxLon = coords[0];\n      if (coords[1] < minLat) minLat = coords[1];\n      if (coords[1] > maxLat) maxLat = coords[1];\n    }\n    \n    // Arama yarıçapı kadar genişlet (111000m = ~1 derece)\n    var padding = (searchRadius / 111000) * 1.5;\n    minLat -= padding; maxLat += padding;\n    var cosLat = Math.cos(minLat * Math.PI / 180) || 1;\n    minLon -= padding / cosLat; maxLon += padding / cosLat;\n    \n    // 2) Grid oluştur (Daha yüksek çözünürlük için 40x40 çözünürlük)\n    var Nx = 40;\n    var Ny = 40;\n    var dx = (maxLon - minLon) / Nx;\n    var dy = (maxLat - minLat) / Ny;\n    \n    var grid = [];\n    var maxVal = 0;\n    \n    for (var i = 0; i < Nx; i++) {\n      for (var j = 0; j < Ny; j++) {\n        var cx = minLon + (i + 0.5) * dx;\n        var cy = minLat + (j + 0.5) * dy;\n        \n        // Kernel Yoğunluğu Hesapla (Quartic/Biweight Kernel)\n        var val = 0;\n        for (var pIdx = 0; pIdx < primaryFeats.length; pIdx++) {\n          var pf = primaryFeats[pIdx];\n          var dist = haversine(cy, cx, pf.geometry.coordinates[1], pf.geometry.coordinates[0]);\n          if (dist <= searchRadius) {\n            var u = dist / searchRadius;\n            val += (1 - u*u) * (1 - u*u);\n          }\n        }\n        \n        grid.push({ i: i, j: j, cx: cx, cy: cy, val: val });\n        if (val > maxVal) maxVal = val;\n      }\n    }\n    \n    // 3) 10 Seviyeli Poligonları üret ve Öznitelik tablosunu doldur\n    if (maxVal > 0) {\n      for (var gIdx = 0; gIdx < grid.length; gIdx++) {\n        var cell = grid[gIdx];\n        if (cell.val <= 0.02 * maxVal) continue; // Çok düşük yoğunluklu hücreleri çizme\n        \n        var ratio = cell.val / maxVal;\n        var level = 'level1';\n        \n        if (ratio >= 0.90) level = 'level10';\n        else if (ratio >= 0.80) level = 'level9';\n        else if (ratio >= 0.70) level = 'level8';\n        else if (ratio >= 0.60) level = 'level7';\n        else if (ratio >= 0.50) level = 'level6';\n        else if (ratio >= 0.40) level = 'level5';\n        else if (ratio >= 0.30) level = 'level4';\n        else if (ratio >= 0.20) level = 'level3';\n        else if (ratio >= 0.10) level = 'level2';\n        \n        // Kare hücresini oluştur\n        var x1 = cell.cx - dx * 0.51;\n        var x2 = cell.cx + dx * 0.51;\n        var y1 = cell.cy - dy * 0.51;\n        var y2 = cell.cy + dy * 0.51;\n        \n        resultFeatures.push({\n          type: 'Feature',\n          properties: { \n            type: 'buffer', \n            density: level,\n            density_value: Math.round(ratio * 100) / 100\n          },\n          geometry: {\n            type: 'Polygon',\n            coordinates: [[\n              [x1, y1],\n              [x2, y1],\n              [x2, y2],\n              [x1, y2],\n              [x1, y1]\n            ]]\n          }\n        });\n        \n        // Öznitelik tablosuna her bir yoğunluk hücresini yaz\n        attributeTable.push({\n          konum: (Math.round(cell.cy * 10000) / 10000) + \", \" + (Math.round(cell.cx * 10000) / 10000),\n          yogunluk_seviyesi: level.toUpperCase().replace('LEVEL', 'Seviye '),\n          yogunluk_orani: Math.round(ratio * 100) + \"%\",\n          yogunluk_skoru: Math.round(cell.val * 100) / 100\n        });\n      }\n      \n      // Tabloyu en yüksek skordan en düşüğe doğru sırala\n      attributeTable.sort(function(a, b) { return b.yogunluk_skoru - a.yogunluk_skoru; });\n    }\n  }\n  explanation = (explanation || '') + ' (' + primaryFeats.length + ' nokta uzerinde 10 seviyeli Kernel Density analizi hesaplandi.)';\n\n} else {\n  resultFeatures = primaryFeats;\n  for (var m = 0; m < primaryFeats.length; m++) attributeTable.push(primaryFeats[m].properties);\n  if (primaryFeats.length === 0 && fetchFailed && !explanation) {\n    explanation = 'Veri kaynagina (OpenStreetMap/Overpass) su an ulasilamadi. Lutfen tekrar deneyin.';\n  }\n}\n\n// ---------- 7) Token/maliyet tahmini ----------\nvar inputCharsTotal = 2500 + ((parsed.parameters && parsed.parameters.location_name) ? 80 : 60) + 800;\nvar outputCharsTotal = JSON.stringify(parsed).length;\nvar prompt_tokens = Math.round(inputCharsTotal / 4);\nvar completion_tokens = Math.round(outputCharsTotal / 4);\nvar pricing = {\n  'claude': { input: 3.00, output: 15.00 }, 'gpt': { input: 0.15, output: 0.60 },\n  'groq': { input: 0.59, output: 0.79 }, 'gemini': { input: 0.075, output: 0.30 },\n  'deepseek': { input: 0.14, output: 0.28 }, 'qwen': { input: 0, output: 0 },\n  'kimi': { input: 0, output: 0 }, 'glm': { input: 0, output: 0 }\n};\nvar price = pricing[MODEL_KEY] || { input: 0, output: 0 };\nvar cost_usd = (prompt_tokens * price.input + completion_tokens * price.output) / 1000000;\n\n// ---------- 8) Cikti ----------\nvar status = resultFeatures.length > 0 ? 'success' : (fetchFailed ? 'error' : 'empty');\n\nreturn [{\n  json: {\n    model: MODEL_KEY,\n    selected_tool: tool,\n    explanation: explanation,\n    parameters: p,\n    geojson: { type: 'FeatureCollection', features: resultFeatures },\n    attribute_table: attributeTable,\n    feature_count: resultFeatures.length,\n    processing_time_ms: Date.now() - t0,\n    debug_overpass: lastOverpassError,\n    usage: {\n      prompt_tokens: prompt_tokens,\n      completion_tokens: completion_tokens,\n      total_tokens: prompt_tokens + completion_tokens,\n      estimated_cost_usd: Math.round(cost_usd * 1000000) / 1000000\n    },\n    status: status\n  }\n}];"
+      },
+      "id": "085bc92c-ce93-4162-9389-fa8a0308aa34",
+      "name": "GIS Engine",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        768,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "application/json; charset=utf-8"
+              },
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      },
+      "id": "135e6e54-d0b7-4e10-bab9-4fff00c6922f",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.2,
+      "position": [
+        1008,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-3.1-flash-lite-preview",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        336,
+        208
+      ],
+      "id": "ca90feae-0d83-4172-9c43-f9fd7bf63aad",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "FLGq3K8Q7leh8KrS",
+          "name": "gemini2"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook - Gemini": {
+      "main": [
+        [
+          {
+            "node": "Read Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Message": {
+      "main": [
+        [
+          {
+            "node": "Gemini GIS Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini GIS Agent": {
+      "main": [
+        [
+          {
+            "node": "GIS Engine",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Nominatim Geocoding Tool": {
+      "ai_tool": [
+        [
+          {
+            "node": "Gemini GIS Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured GIS Output": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Gemini GIS Agent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GIS Engine": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Gemini GIS Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "9749c454-ee1a-4de7-951f-f203e2deae39",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "6525f1d2d37acedc8d65f2c5ebd66cc1803c3ede4cb4b58f03ee2b771e6d7ed9"
+  },
+  "nodeGroups": [],
+  "id": "IHGr1EFxGKsXGOU1",
+  "tags": []
+}

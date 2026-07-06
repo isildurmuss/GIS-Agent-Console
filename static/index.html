@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CBS Agent Konsolu</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+  <link href="https://unpkg.com/maplibre-gl@4.3.2/dist/maplibre-gl.css" rel="stylesheet" />
+  <link rel="stylesheet" href="/static/style.css?v=15" />
+</head>
+<body>
+  <div class="app-layout">
+    
+    <!-- ═══════════════════════════════════════════════════════════════════
+         LEFT SIDEBAR
+         ═══════════════════════════════════════════════════════════════════ -->
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <span class="brand-logo">◈</span>
+        <div class="brand-info">
+          <h2>CBS Agent</h2>
+          <span>Console v3.2</span>
+        </div>
+      </div>
+
+      <nav class="sidebar-nav">
+        <!-- Panel Görünümü Bölümü -->
+        <div class="nav-section-title">PANEL GÖRÜNÜMÜ</div>
+        <a href="#" class="nav-item active" id="btn-view-all">
+          <span class="nav-icon">🗂️</span> Tüm Modeller (Grid)
+        </a>
+
+        <!-- Yapay Zeka Modelleri Bölümü -->
+        <div class="nav-section-title">YAPAY ZEKA MODELLERİ</div>
+        <div class="model-nav-list">
+          <a href="#" class="nav-item model-select-item" data-model-key="claude" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+            <span>
+              <span class="model-dot" style="background:#d97757"></span> Claude Sonnet 4.6
+            </span>
+            <span class="btn-sidebar-test-model" data-model="claude" title="Sadece Bu Modeli Test Et" style="background: rgba(79, 70, 229, 0.1); border: 1px solid rgba(79, 70, 229, 0.2); color: var(--accent-primary); padding: 2px 6px; font-size: 9.5px; border-radius: 4px; font-weight: 600; cursor: pointer;">
+              ▶ Test
+            </span>
+          </a>
+          <a href="#" class="nav-item model-select-item" data-model-key="gpt" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+            <span>
+              <span class="model-dot" style="background:#19c37d"></span> GPT 5.5
+            </span>
+            <span class="btn-sidebar-test-model" data-model="gpt" title="Sadece Bu Modeli Test Et" style="background: rgba(79, 70, 229, 0.1); border: 1px solid rgba(79, 70, 229, 0.2); color: var(--accent-primary); padding: 2px 6px; font-size: 9.5px; border-radius: 4px; font-weight: 600; cursor: pointer;">
+              ▶ Test
+            </span>
+          </a>
+          <a href="#" class="nav-item model-select-item" data-model-key="groq" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+            <span>
+              <span class="model-dot" style="background:#f55036"></span> Llama 3.1
+            </span>
+            <span class="btn-sidebar-test-model" data-model="groq" title="Sadece Bu Modeli Test Et" style="background: rgba(79, 70, 229, 0.1); border: 1px solid rgba(79, 70, 229, 0.2); color: var(--accent-primary); padding: 2px 6px; font-size: 9.5px; border-radius: 4px; font-weight: 600; cursor: pointer;">
+              ▶ Test
+            </span>
+          </a>
+          <a href="#" class="nav-item model-select-item" data-model-key="gemini" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+            <span>
+              <span class="model-dot" style="background:#5b8def"></span> Gemini 2.5 Flash
+            </span>
+            <span class="btn-sidebar-test-model" data-model="gemini" title="Sadece Bu Modeli Test Et" style="background: rgba(79, 70, 229, 0.1); border: 1px solid rgba(79, 70, 229, 0.2); color: var(--accent-primary); padding: 2px 6px; font-size: 9.5px; border-radius: 4px; font-weight: 600; cursor: pointer;">
+              ▶ Test
+            </span>
+          </a>
+          <a href="#" class="nav-item model-select-item" data-model-key="deepseek" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+            <span>
+              <span class="model-dot" style="background:#3b82f6"></span> DeepSeek V4 Flash
+            </span>
+            <span class="btn-sidebar-test-model" data-model="deepseek" title="Sadece Bu Modeli Test Et" style="background: rgba(79, 70, 229, 0.1); border: 1px solid rgba(79, 70, 229, 0.2); color: var(--accent-primary); padding: 2px 6px; font-size: 9.5px; border-radius: 4px; font-weight: 600; cursor: pointer;">
+              ▶ Test
+            </span>
+          </a>
+          <a href="#" class="nav-item model-select-item" data-model-key="qwen" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+            <span>
+              <span class="model-dot" style="background:#a855f7"></span> Qwen 3.7 Flash
+            </span>
+            <span class="btn-sidebar-test-model" data-model="qwen" title="Sadece Bu Modeli Test Et" style="background: rgba(79, 70, 229, 0.1); border: 1px solid rgba(79, 70, 229, 0.2); color: var(--accent-primary); padding: 2px 6px; font-size: 9.5px; border-radius: 4px; font-weight: 600; cursor: pointer;">
+              ▶ Test
+            </span>
+          </a>
+          <a href="#" class="nav-item model-select-item" data-model-key="glm" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+            <span>
+              <span class="model-dot" style="background:#14b8a6"></span> GLM 5.1
+            </span>
+            <span class="btn-sidebar-test-model" data-model="glm" title="Sadece Bu Modeli Test Et" style="background: rgba(79, 70, 229, 0.1); border: 1px solid rgba(79, 70, 229, 0.2); color: var(--accent-primary); padding: 2px 6px; font-size: 9.5px; border-radius: 4px; font-weight: 600; cursor: pointer;">
+              ▶ Test
+            </span>
+          </a>
+        </div>
+
+        <!-- Karşılaştırma & Analiz Bölümü -->
+        <div class="nav-section-title">KARŞILAŞTIRMA &amp; ANALİZ</div>
+        <a href="#" class="nav-item" id="btn-view-live-comparison">
+          <span class="nav-icon">⚡</span> Canlı Sorgu Grafikleri
+        </a>
+
+
+        <!-- Akordeon: Canlı Sorgu Süreleri -->
+        <details class="sidebar-accordion" id="acc-live-latency" open>
+          <summary class="accordion-header">
+            <span>⏱️ Süre Karşılaştırması</span>
+            <span class="accordion-arrow">▼</span>
+          </summary>
+          <div class="accordion-content" id="sidebar-live-latency">
+            <p class="empty-comp-text">Komut çalıştırıldığında süreler burada listelenecektir.</p>
+          </div>
+        </details>
+
+        <!-- Akordeon: Canlı Sorgu Maliyetleri -->
+        <details class="sidebar-accordion" id="acc-live-cost">
+          <summary class="accordion-header">
+            <span>💰 Maliyet Karşılaştırması</span>
+            <span class="accordion-arrow">▼</span>
+          </summary>
+          <div class="accordion-content" id="sidebar-live-cost">
+            <p class="empty-comp-text">Komut çalıştırıldığında maliyetler burada listelenecektir.</p>
+          </div>
+        </details>
+
+        <!-- Akordeon: Canlı Sorgu Tokenları -->
+        <details class="sidebar-accordion" id="acc-live-tokens">
+          <summary class="accordion-header">
+            <span>🪙 Token Karşılaştırması</span>
+            <span class="accordion-arrow">▼</span>
+          </summary>
+          <div class="accordion-content" id="sidebar-live-tokens">
+            <p class="empty-comp-text">Komut çalıştırıldığında tokenlar burada listelenecektir.</p>
+          </div>
+        </details>
+
+        <!-- Akordeon 1: Benchmark Skorları -->
+        <details class="sidebar-accordion" id="acc-bench-scores" open>
+          <summary class="accordion-header">
+            <span>📈 Benchmark Skorları</span>
+            <span class="accordion-arrow">▼</span>
+          </summary>
+          <div class="accordion-content" style="padding: 10px; display: flex; flex-direction: column; gap: 8px;">
+            <button id="btn-sidebar-run-bench" class="run-btn-modern" style="width: 100%; padding: 6px 12px; font-size: 11.5px; background: #4f46e5; border-radius: 6px; color: #ffffff; cursor: pointer; border: none; font-weight: 500; display: flex; align-items: center; justify-content: center; gap: 6px;">
+              <span>🔄</span> Benchmark Testini Çalıştır
+            </button>
+            <div id="sidebar-benchmark-scores">
+              <div class="score-loading">Benchmark verisi yükleniyor...</div>
+            </div>
+          </div>
+        </details>
+
+        <!-- Akordeon 2: Yardım & Tekli Test -->
+        <details class="sidebar-accordion" id="acc-single-test" open>
+          <summary class="accordion-header">
+            <span>ℹ️ Yardım (Tekli Test)</span>
+            <span class="accordion-arrow">▼</span>
+          </summary>
+          <div class="accordion-content" style="padding: 10px; display: flex; flex-direction: column; gap: 8px;">
+            <p style="font-size:11px; color:var(--text-dim); line-height:1.4; margin-bottom:4px;">
+              Model adını yazıp test edin. Sonuçlar var olan benchmark tablosuna eklenir. (Model anahtarları: gpt, claude, deepseek, gemini, groq, glm, qwen)
+            </p>
+            <input 
+              type="text" 
+              id="input-single-model" 
+              placeholder="Model adı girin... (Örn: gpt)" 
+              style="width: 100%; padding: 6px 10px; font-size: 12px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg); color: var(--text);"
+            />
+            <button id="btn-run-single-bench" class="run-btn-modern" style="width: 100%; padding: 6px 12px; font-size: 11.5px; background: var(--accent-primary); border-radius: 6px; color: #ffffff; cursor: pointer; border: none; font-weight: 500;">
+              Modeli Test Et &amp; Güncelle
+            </button>
+          </div>
+        </details>
+      </nav>
+    </aside>
+
+    <!-- ═══════════════════════════════════════════════════════════════════
+         MAIN CONTAINER
+         ═══════════════════════════════════════════════════════════════════ -->
+    <div class="main-container">
+      
+      <!-- Topbar / Command Area -->
+      <header class="topbar-modern">
+        <div class="topbar-left-info">
+          <h1>Dashboard Genel Bakış</h1>
+          <p>Yapay zeka modellerini aynı CBS komutuyla yarıştırın.</p>
+        </div>
+        <div class="command-card">
+          <form id="query-form" class="query-form-modern">
+            <input 
+              type="text" 
+              id="query-input" 
+              placeholder="Türkçe doğal dil CBS komutu yazın... Örn: Şişli'deki eczaneleri bul ve 200m buffer at" 
+              required
+            />
+            <button type="submit" id="run-btn" class="run-btn-modern">
+              <span class="run-btn-label">Analiz Et</span>
+            </button>
+          </form>
+          <div class="quick-examples-modern">
+            <span class="examples-label">Hızlı örnekler:</span>
+            <button type="button" class="example-chip" data-example="Beşiktaş'taki eczaneleri göster">Eczaneleri listele</button>
+            <button type="button" class="example-chip" data-example="Kadıköy'deki parkların etrafına 300m tampon çiz">Buffer</button>
+            <button type="button" class="example-chip" data-example="Şişli'deki eczanelere en yakın hastaneyi bul">Yakınlık</button>
+            <button type="button" class="example-chip" data-example="Beşiktaş'taki hastanelere en yakın eczanelere uğrayan rota ver">Rota</button>
+          </div>
+        </div>
+      </header>
+
+      <!-- VIEW 1: Grid Container of Maps (Default View) -->
+      <main class="grid-container" id="grid-container">
+        
+        <!-- Panel: Claude -->
+        <section class="panel" data-model="claude" style="--accent: #d97757">
+          <header class="panel-header">
+            <div class="panel-header-left">
+              <span class="model-dot" style="background:#d97757"></span>
+              <span class="model-name">Claude Sonnet 4.6</span>
+            </div>
+            <div class="panel-header-right">
+              <span class="panel-status" data-field="status">Hazır</span>
+              <span class="panel-tokens" data-field="tokens"></span>
+              <span class="panel-time" data-field="time"></span>
+            </div>
+          </header>
+          <div class="map" id="map-claude"></div>
+          <footer class="panel-footer">
+            <div class="tool-row">
+              <span class="tool-chip" data-field="tool">—</span>
+              <p class="explanation" data-field="explanation">Kutudan bir komut girip "Analiz Et"e basın.</p>
+            </div>
+            <details class="attr-table-wrap">
+              <summary>Öznitelik Tablosu &amp; SQL <span class="count" data-field="count"></span></summary>
+              <div class="sql-line" data-field="sql"></div>
+              <div class="table-scroll">
+                <table data-field="table"><thead></thead><tbody></tbody></table>
+              </div>
+            </details>
+          </footer>
+        </section>
+
+        <!-- Panel: GPT -->
+        <section class="panel" data-model="gpt" style="--accent: #19c37d">
+          <header class="panel-header">
+            <div class="panel-header-left">
+              <span class="model-dot" style="background:#19c37d"></span>
+              <span class="model-name">GPT 5.5</span>
+            </div>
+            <div class="panel-header-right">
+              <span class="panel-status" data-field="status">Hazır</span>
+              <span class="panel-tokens" data-field="tokens"></span>
+              <span class="panel-time" data-field="time"></span>
+            </div>
+          </header>
+          <div class="map" id="map-gpt"></div>
+          <footer class="panel-footer">
+            <div class="tool-row">
+              <span class="tool-chip" data-field="tool">—</span>
+              <p class="explanation" data-field="explanation">Kutudan bir komut girip "Analiz Et"e basın.</p>
+            </div>
+            <details class="attr-table-wrap">
+              <summary>Öznitelik Tablosu &amp; SQL <span class="count" data-field="count"></span></summary>
+              <div class="sql-line" data-field="sql"></div>
+              <div class="table-scroll">
+                <table data-field="table"><thead></thead><tbody></tbody></table>
+              </div>
+            </details>
+          </footer>
+        </section>
+
+        <!-- Panel: Groq -->
+        <section class="panel" data-model="groq" style="--accent: #f55036">
+          <header class="panel-header">
+            <div class="panel-header-left">
+              <span class="model-dot" style="background:#f55036"></span>
+              <span class="model-name">Llama 3.1</span>
+            </div>
+            <div class="panel-header-right">
+              <span class="panel-status" data-field="status">Hazır</span>
+              <span class="panel-tokens" data-field="tokens"></span>
+              <span class="panel-time" data-field="time"></span>
+            </div>
+          </header>
+          <div class="map" id="map-groq"></div>
+          <footer class="panel-footer">
+            <div class="tool-row">
+              <span class="tool-chip" data-field="tool">—</span>
+              <p class="explanation" data-field="explanation">Kutudan bir komut girip "Analiz Et"e basın.</p>
+            </div>
+            <details class="attr-table-wrap">
+              <summary>Öznitelik Tablosu &amp; SQL <span class="count" data-field="count"></span></summary>
+              <div class="sql-line" data-field="sql"></div>
+              <div class="table-scroll">
+                <table data-field="table"><thead></thead><tbody></tbody></table>
+              </div>
+            </details>
+          </footer>
+        </section>
+
+        <!-- Panel: Gemini -->
+        <section class="panel" data-model="gemini" style="--accent: #5b8def">
+          <header class="panel-header">
+            <div class="panel-header-left">
+              <span class="model-dot" style="background:#5b8def"></span>
+              <span class="model-name">Gemini 2.5 Flash</span>
+            </div>
+            <div class="panel-header-right">
+              <span class="panel-status" data-field="status">Hazır</span>
+              <span class="panel-tokens" data-field="tokens"></span>
+              <span class="panel-time" data-field="time"></span>
+            </div>
+          </header>
+          <div class="map" id="map-gemini"></div>
+          <footer class="panel-footer">
+            <div class="tool-row">
+              <span class="tool-chip" data-field="tool">—</span>
+              <p class="explanation" data-field="explanation">Kutudan bir komut girip "Analiz Et"e basın.</p>
+            </div>
+            <details class="attr-table-wrap">
+              <summary>Öznitelik Tablosu &amp; SQL <span class="count" data-field="count"></span></summary>
+              <div class="sql-line" data-field="sql"></div>
+              <div class="table-scroll">
+                <table data-field="table"><thead></thead><tbody></tbody></table>
+              </div>
+            </details>
+          </footer>
+        </section>
+
+        <!-- Panel: DeepSeek -->
+        <section class="panel" data-model="deepseek" style="--accent: #3b82f6">
+          <header class="panel-header">
+            <div class="panel-header-left">
+              <span class="model-dot" style="background:#3b82f6"></span>
+              <span class="model-name">DeepSeek V4 Flash</span>
+            </div>
+            <div class="panel-header-right">
+              <span class="panel-status" data-field="status">Hazır</span>
+              <span class="panel-tokens" data-field="tokens"></span>
+              <span class="panel-time" data-field="time"></span>
+            </div>
+          </header>
+          <div class="map" id="map-deepseek"></div>
+          <footer class="panel-footer">
+            <div class="tool-row">
+              <span class="tool-chip" data-field="tool">—</span>
+              <p class="explanation" data-field="explanation">Kutudan bir komut girip "Analiz Et"e basın.</p>
+            </div>
+            <details class="attr-table-wrap">
+              <summary>Öznitelik Tablosu &amp; SQL <span class="count" data-field="count"></span></summary>
+              <div class="sql-line" data-field="sql"></div>
+              <div class="table-scroll">
+                <table data-field="table"><thead></thead><tbody></tbody></table>
+              </div>
+            </details>
+          </footer>
+        </section>
+
+        <!-- Panel: Qwen -->
+        <section class="panel" data-model="qwen" style="--accent: #a855f7">
+          <header class="panel-header">
+            <div class="panel-header-left">
+              <span class="model-dot" style="background:#a855f7"></span>
+              <span class="model-name">Qwen 3.7 Flash</span>
+            </div>
+            <div class="panel-header-right">
+              <span class="panel-status" data-field="status">Hazır</span>
+              <span class="panel-tokens" data-field="tokens"></span>
+              <span class="panel-time" data-field="time"></span>
+            </div>
+          </header>
+          <div class="map" id="map-qwen"></div>
+          <footer class="panel-footer">
+            <div class="tool-row">
+              <span class="tool-chip" data-field="tool">—</span>
+              <p class="explanation" data-field="explanation">Kutudan bir komut girip "Analiz Et"e basın.</p>
+            </div>
+            <details class="attr-table-wrap">
+              <summary>Öznitelik Tablosu &amp; SQL <span class="count" data-field="count"></span></summary>
+              <div class="sql-line" data-field="sql"></div>
+              <div class="table-scroll">
+                <table data-field="table"><thead></thead><tbody></tbody></table>
+              </div>
+            </details>
+          </footer>
+        </section>
+
+        <!-- Panel: GLM -->
+        <section class="panel" data-model="glm" style="--accent: #14b8a6">
+          <header class="panel-header">
+            <div class="panel-header-left">
+              <span class="model-dot" style="background:#14b8a6"></span>
+              <span class="model-name">GLM 5.1</span>
+            </div>
+            <div class="panel-header-right">
+              <span class="panel-status" data-field="status">Hazır</span>
+              <span class="panel-tokens" data-field="tokens"></span>
+              <span class="panel-time" data-field="time"></span>
+            </div>
+          </header>
+          <div class="map" id="map-glm"></div>
+          <footer class="panel-footer">
+            <div class="tool-row">
+              <span class="tool-chip" data-field="tool">—</span>
+              <p class="explanation" data-field="explanation">Kutudan bir komut girip "Analiz Et"e basın.</p>
+            </div>
+            <details class="attr-table-wrap">
+              <summary>Öznitelik Tablosu &amp; SQL <span class="count" data-field="count"></span></summary>
+              <div class="sql-line" data-field="sql"></div>
+              <div class="table-scroll">
+                <table data-field="table"><thead></thead><tbody></tbody></table>
+              </div>
+            </details>
+          </footer>
+        </section>
+
+      </main>
+
+      <!-- VIEW 2: Canlı Karşılaştırma Grafikleri (Hidden by Default) -->
+      <main class="analysis-view hidden" id="live-comparison-view">
+        <div class="analysis-header">
+          <h2>⚡ Canlı Sorgu Analiz Grafikleri</h2>
+          <p>En son çalıştırılan komut için modellerin performans metrikleri.</p>
+        </div>
+        
+        <div class="analysis-grid">
+          <div class="analysis-card">
+            <h3>⏱️ Yanıt Yürütme Süresi (Saniye)</h3>
+            <div class="chart-box">
+              <canvas id="chart-live-latency"></canvas>
+            </div>
+          </div>
+          
+          <div class="analysis-card card-double-width" id="live-cost-card">
+            <h3>💰 Tahmini İstek Maliyeti (USD)</h3>
+            <div class="cost-overview-header">
+              <div class="cost-total-block">
+                <span class="cost-lbl">Toplam</span>
+                <span class="cost-val" id="live-cost-total-val">$0.0000</span>
+              </div>
+              <div class="cost-categories-block" id="live-cost-categories">
+                <!-- Dynamically populated model costs -->
+              </div>
+            </div>
+            <div class="chart-box-large">
+              <canvas id="chart-live-cost"></canvas>
+            </div>
+          </div>
+
+          <div class="analysis-card">
+            <h3>🪙 Kullanılan Toplam Token Sayısı</h3>
+            <div class="chart-box">
+              <canvas id="chart-live-tokens"></canvas>
+            </div>
+          </div>
+
+          <div class="analysis-card">
+            <h3>📦 Haritada Bulunan Nesne Sayısı</h3>
+            <div class="chart-box">
+              <canvas id="chart-live-features"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <div class="analysis-card table-card-full">
+          <h3>📋 Detaylı Canlı Karşılaştırma Tablosu</h3>
+          <div id="main-live-comparison-table">
+            <p class="empty-comp-text">Komut çalıştırıldığında karşılaştırma tablosu burada belirecektir.</p>
+          </div>
+        </div>
+      </main>
+
+      <!-- VIEW 3: Toplu Benchmark Analizi (Hidden by Default) -->
+      <main class="analysis-view hidden" id="benchmark-analysis-view">
+        <div class="analysis-header-row" style="display: flex; justify-content: space-between; align-items: center;">
+          <div class="analysis-header">
+            <h2>📊 Toplu Benchmark Analiz Raporu</h2>
+            <p>10 gerçek CBS senaryosu üzerinden yapılan genel performans testleri.</p>
+          </div>
+          <div style="display: flex; gap: 12px; align-items: center;">
+            <button id="btn-run-benchmark-suite" class="run-btn-modern" style="padding: 8px 16px; font-size: 13px; background: #4f46e5; border-radius: 6px; color: #ffffff; cursor: pointer; border: none; font-weight: 500; display: flex; align-items: center; gap: 8px;">
+              <span>🔄</span> Testi Yeniden Çalıştır
+            </button>
+          </div>
+        </div>
+
+        <!-- KPI / Stats Cards (Metricly Inc style) -->
+        <div class="kpi-grid">
+          <div class="kpi-card" id="kpi-best-tool">
+            <div class="kpi-top">
+              <span class="kpi-title">En İyi Araç Doğruluğu</span>
+              <span class="kpi-badge-icon">🔧</span>
+            </div>
+            <div class="kpi-value">—</div>
+            <div class="kpi-trend trend-up">En yüksek başarı oranı</div>
+          </div>
+          <div class="kpi-card" id="kpi-best-spatial">
+            <div class="kpi-top">
+              <span class="kpi-title">En İyi Konum Doğruluğu</span>
+              <span class="kpi-badge-icon">📍</span>
+            </div>
+            <div class="kpi-value">—</div>
+            <div class="kpi-trend trend-up">Eşik değeri: 2 km</div>
+          </div>
+          <div class="kpi-card" id="kpi-lowest-latency">
+            <div class="kpi-top">
+              <span class="kpi-title">En Düşük Yanıt Süresi</span>
+              <span class="kpi-badge-icon">⏱️</span>
+            </div>
+            <div class="kpi-value">—</div>
+            <div class="kpi-trend trend-down">En hızlı çalışan model</div>
+          </div>
+          <div class="kpi-card" id="kpi-valid-schema">
+            <div class="kpi-top">
+              <span class="kpi-title">Geçerli GeoJSON Şema Oranı</span>
+              <span class="kpi-badge-icon">✅</span>
+            </div>
+            <div class="kpi-value">—</div>
+            <div class="kpi-trend trend-neutral">Tüm modeller ortalaması</div>
+          </div>
+        </div>
+
+        <div class="analysis-grid">
+          <div class="analysis-card card-double-width">
+            <h3>🏆 Genel Performans &amp; Başarı Sıralaması</h3>
+            <div class="bench-split-container">
+              <div class="chart-box-pie">
+                <canvas id="chart-bench-bar"></canvas>
+              </div>
+              <div class="ranking-panel-container" id="ranking-panel">
+                <!-- Dynamic ranking items go here -->
+              </div>
+            </div>
+          </div>
+
+          <div class="analysis-card">
+            <h3>🕸️ Çok Boyutlu Model Karşılaştırma (Radar)</h3>
+            <div class="chart-box">
+              <canvas id="chart-bench-radar"></canvas>
+            </div>
+          </div>
+
+          <div class="analysis-card">
+            <h3>🔧 Araç Seçim Doğruluğu (%)</h3>
+            <div class="chart-box">
+              <canvas id="chart-bench-tool"></canvas>
+            </div>
+          </div>
+
+          <div class="analysis-card">
+            <h3>📍 Konum Bulma Doğruluğu (%)</h3>
+            <div class="chart-box">
+              <canvas id="chart-bench-spatial"></canvas>
+            </div>
+          </div>
+
+          <div class="analysis-card">
+            <h3>⚙️ Parametre Çıkarım Doğruluğu (%)</h3>
+            <div class="chart-box">
+              <canvas id="chart-bench-param"></canvas>
+            </div>
+          </div>
+
+          <div class="analysis-card">
+            <h3>✅ GeoJSON Şema Geçerliliği (%)</h3>
+            <div class="chart-box">
+              <canvas id="chart-bench-schema"></canvas>
+            </div>
+          </div>
+
+          <div class="analysis-card">
+            <h3>⏱️ Ortalama Yanıt Süresi Karşılaştırması (ms)</h3>
+            <div class="chart-box">
+              <canvas id="chart-bench-latency"></canvas>
+            </div>
+          </div>
+
+          <!-- Scenario-based detailed table directly on the same page -->
+          <div class="analysis-card card-full-width">
+            <h3>📋 Senaryo Bazlı Detay Tablosu</h3>
+            <p style="font-size:12.5px;color:var(--text-dim);margin-top:2px;">Her test senaryosu için modellerin ayrıntılı performansı</p>
+            
+            <div class="bx-detail-tabs" id="bx-detail-tabs"></div>
+            <div class="bx-table-legend" style="display: flex; gap: 16px; margin: 12px 0 4px; font-size: 11.5px; flex-wrap: wrap; background: #f8fafc; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--border);">
+              <span style="font-weight: 600; color: var(--text-dim);">Değerlendirme Kriterleri:</span>
+              <span><strong style="color: #ffffff; background: #10b981; padding: 1px 5px; border-radius: 3px; font-size: 10px; margin-right: 4px;">A</strong> Araç Seçimi</span>
+              <span><strong style="color: #ffffff; background: #10b981; padding: 1px 5px; border-radius: 3px; font-size: 10px; margin-right: 4px;">K</strong> Konum Doğruluğu (2 km tolerans)</span>
+              <span><strong style="color: #ffffff; background: #10b981; padding: 1px 5px; border-radius: 3px; font-size: 10px; margin-right: 4px;">P</strong> Parametre Doğruluğu</span>
+              <span><strong style="color: #ffffff; background: #10b981; padding: 1px 5px; border-radius: 3px; font-size: 10px; margin-right: 4px;">Ş</strong> GeoJSON Şema Geçerliliği</span>
+            </div>
+            <div class="table-scroll" style="margin-top:16px; max-height:none; overflow:visible;">
+              <table class="cmp-table">
+                <thead id="bx-detail-thead"></thead>
+                <tbody id="bx-detail-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+  <!-- Benchmark Map Modal -->
+  <div id="bx-map-modal" class="modal-backdrop hidden">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="bx-modal-title">🗺️ Senaryo Harita Önizleme</h3>
+        <button id="bx-modal-close" class="modal-close-btn">&times;</button>
+      </div>
+      <div class="modal-subheader">
+        <p id="bx-modal-query"></p>
+      </div>
+      <div class="modal-tabs-row" id="bx-modal-tabs">
+        <!-- Model tabs will be rendered here -->
+      </div>
+      <div class="modal-body">
+        <div id="bx-modal-map" style="width: 100%; height: 420px; border-radius: 8px; position: relative;"></div>
+        <div id="bx-modal-info" style="margin-top: 12px; font-size: 13px; color: var(--text-dim); display: flex; justify-content: space-between; align-items: center;">
+          <span id="bx-modal-status">Harita yükleniyor...</span>
+          <span id="bx-modal-meta" style="font-family: var(--font-mono); font-size: 11px;"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/maplibre-gl@4.3.2/dist/maplibre-gl.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="/static/app.js?v=28"></script>
+</body>
+</html>
